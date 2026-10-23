@@ -64,6 +64,7 @@ const Actions = {
   },
   placeOrder(el) {                                                               // the SELL / BUY buttons
     const a = State.account, o = UI.order, m = MAP[o.sym], q = Q[o.sym];
+    if (!q.live) return UI.toast('Waiting for live prices…');                    // never fill at a pre-feed seed price
     const vol = Math.max(0.01, parseFloat($('#o-vol').value) || 0.01);
     // a "position" = one open trade. buys fill at the ask price, sells at the bid price.
     const p = { id: State.nextId++, sym: o.sym, side: el.dataset.side, vol, price: el.dataset.side === 'buy' ? q.ask : q.bid, time: new Date() };

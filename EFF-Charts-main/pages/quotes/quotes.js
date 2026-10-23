@@ -4,6 +4,9 @@
    QUOTES PAGE  (pages/quotes/quotes.js)
    =====================================================================
    The watch-list: one row per symbol with live prices.
+   Prices are LIVE TradingView quotes: core.js keeps them in Q (bid, ask,
+   day change ch/chp, day low/high and the live spread) and this page
+   simply paints Q every time the Feed fires.
 
    This file uses things defined by the shared scripts that load before it:
      core.js  -> State, Q (live quotes), MAP, MARKET, Feed, $, clock, icon, pxHTML, UI, gated
@@ -27,12 +30,15 @@ const PAGE = (() => {
     const m = MAP[sym], q = Q[sym], S = State.settings;
     // small helper: put html into the element called "<id>-<symbol>", e.g. #chg-EURUSD
     const set = (id, html) => { const el = $(`#${id}-${sym}`); if (el) el.innerHTML = html; };
-    const pts = Math.round((q.bid - q.open) / m.point);          // change since open, in points
-    const pct = (q.bid - q.open) / q.open * 100;                 // change since open, in percent
+    // Day change: TradingView's own ch / chp (kept in Q by core.js) when the symbol is
+    // live, otherwise worked out from the day's reference price (q.open) as before.
+    const useTV = q.live && q.ch !== null && q.ch !== undefined && q.chp !== null && q.chp !== undefined;
+    const pts = useTV ? Math.round(q.ch / m.point) : Math.round((q.bid - q.open) / m.point);   // change, in points
+    const pct = useTV ? q.chp : (q.bid - q.open) / q.open * 100;                               // change, in percent
     const cls = pts < 0 ? 'dn' : 'up';                           // red when down, blue when up
     set('chg',  `<span class="${cls}">${pts > 0 ? '+' : ''}${pts} &nbsp;${pct > 0 ? '+' : ''}${pct.toFixed(2)}%</span>`);
-    set('time', clock(q.time));                                  // time of the last tick
-    set('spr',  S.showSpread ? `${icon('spread', 18, 1.6)} ${m.spread}` : '');   // spread, only if enabled in Settings
+    set('time', q.live ? clock(q.time) : '…');                   // time of the last live tick ("…" while connecting)
+    set('spr',  S.showSpread ? `${icon('spread', 18, 1.6)} ${q.spread}` : '');   // LIVE spread (ask-bid) in points, if enabled in Settings
     ['bid', 'ask'].forEach(side => {                             // the two big prices
       const el = $(`#${side}-${sym}`);
       if (el) { el.className = 'px ' + (q.dir > 0 ? 'up' : 'dn'); el.innerHTML = pxHTML(q[side], m.digits); }

@@ -5,9 +5,9 @@ The look and behaviour are the same as the single-page version.
 
 Run:
 Open index.htm in a browser (it forwards to pages/quotes/quotes.html).
-The chart library and Google Fonts load from online CDNs, so the Charts
-page and the fonts need an internet connection. No server is needed;
-double-clicking the files works.
+The chart library and Google Fonts load from online CDNs, and the live
+TradingView feed + Yahoo candle history (see DATA FEEDS below) also need
+an internet connection. No server is needed; double-clicking the files works.
 
 FOLDERS
 index.htm                     front door: redirects to the Quotes page
@@ -15,8 +15,8 @@ index.htm                     front door: redirects to the Quotes page
 shared/                       used by EVERY page
   base.css                    theme colours, app shell, buttons, drawer, sheets, order ticket, toast
   theme-boot.js               tiny <head> script: applies light/dark before first paint (no flash)
-  core.js                     helpers, icons, symbols + fake price feed, State, SESSION saving,
-                              trading maths, theme, toast/sheet/dialog/drawer helpers
+  core.js                     helpers, icons, symbols + LIVE TradingView price feed, State,
+                              SESSION saving, trading maths, theme, toast/sheet/dialog/drawer helpers
   shell.js                    shared actions, order ticket, header + bottom nav, go()/renderRoute(),
                               App.start(), first-run consent dialog
 
@@ -32,6 +32,19 @@ pages/<name>/<name>.html|css|js     one folder per screen:
   journal     terminal log
   about       version + risk warning (static html)
   calendar, community, challenges, help      "coming soon" placeholders
+
+DATA FEEDS
+Live prices (Quotes/watchlist, Charts, Trade, the order ticket) come from
+TradingView's public WebSocket, wss://data.tradingview.com (one anonymous
+quote session: lp / bid / ask / ch / chp) - see section 2d in shared/core.js.
+Candle HISTORY on the Charts page comes from Yahoo Finance
+(query1.finance.yahoo.com, fetched through a CORS proxy) - see
+loadHistoricalCandles() in pages/charts/charts.js. The still-forming candle
+then updates tick-by-tick from the TradingView prices.
+Symbol mapping lives in MARKET (shared/core.js): TradingView uses
+exchange:sym (FX:EURUSD, OANDA:XAUUSD), Yahoo uses sym=X (EURUSD=X; spot
+gold often returns no Yahoo data, so gold falls back to GC=F futures).
+TradingView quotes are indicative, not an executable broker feed.
 
 HOW A PAGE LOADS
 Each page html loads, in order:  theme-boot.js -> base.css -> <page>.css ... then at the
