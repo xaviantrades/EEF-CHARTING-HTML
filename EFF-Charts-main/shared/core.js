@@ -9,7 +9,7 @@
 
      0) SMALL HELPERS        $, money(), Store ...
      1) ICONS                inline SVG icons + hydrateIcons()
-     2) STATE + FEED         the data: symbols, account, fake price engine
+     2) STATE + FEED         the data: symbols, account, TradingView live feed
      2e) SESSION             NEW: keeps the data alive between pages
      2f) TRADING MATHS       profit / margin / totals
      3) THEME                light / dark / system
@@ -115,9 +115,14 @@ function hydrateIcons(root = document) {
 // ---- 2a) The symbols we offer. EDIT to add instruments. ----
 // digits  = decimals in the price      spread = in "points" (smallest price step)
 // contract= units per 1.00 lot         usdBase= true when USD is the FIRST currency (USDJPY...)
+// exchange+sym = the TradingView live symbol ("FX:EURUSD"); candle HISTORY comes
+//                from Yahoo Finance as "<sym>=X" ("EURUSD=X", gold: see below).
+// price   = fallback seed, painted only until the first live TradingView tick
+//           arrives (spread is likewise only a fallback: live bid/ask replace it)
 const MARKET = [
   {
     sym: "EURUSD",
+    price: 1.16000,
     exchange: "FX",
     name: "Euro vs US Dollar",
     digits: 5,
@@ -127,6 +132,7 @@ const MARKET = [
   },
   {
     sym: "GBPUSD",
+    price: 1.34000,
     exchange: "FX",
     name: "Great Britain Pound vs US Dollar",
     digits: 5,
@@ -136,6 +142,7 @@ const MARKET = [
   },
   {
     sym: "USDJPY",
+    price: 150.000,
     exchange: "FX",
     name: "US Dollar vs Japanese Yen",
     digits: 3,
@@ -145,6 +152,7 @@ const MARKET = [
   },
   {
     sym: "USDCHF",
+    price: 0.80000,
     exchange: "FX",
     name: "US Dollar vs Swiss Franc",
     digits: 5,
@@ -154,6 +162,7 @@ const MARKET = [
   },
   {
     sym: "USDCAD",
+    price: 1.40000,
     exchange: "FX",
     name: "US Dollar vs Canadian Dollar",
     digits: 5,
@@ -163,6 +172,7 @@ const MARKET = [
   },
   {
     sym: "AUDUSD",
+    price: 0.65000,
     exchange: "FX",
     name: "Australian Dollar vs US Dollar",
     digits: 5,
@@ -172,6 +182,7 @@ const MARKET = [
   },
   {
     sym: "NZDUSD",
+    price: 0.58000,
     exchange: "FX",
     name: "New Zealand Dollar vs US Dollar",
     digits: 5,
@@ -181,6 +192,7 @@ const MARKET = [
   },
   {
     sym: "XAUUSD",
+    price: 4000.00,
     exchange: "OANDA",
     name: "Gold vs US Dollar",
     digits: 2,
@@ -190,18 +202,28 @@ const MARKET = [
   }
 ];
 
-const MAP = {};   // MAP['EURUSD'] -> its definition (fast lookup)
-const Q   = {};   // Q['EURUSD']   -> its LIVE quote {bid, ask, open, lo, hi, dir, time}
+const MAP = {};    // MAP['EURUSD']    -> its definition (fast lookup)
+const Q   = {};    // Q['EURUSD']      -> its LIVE quote {bid, ask, open, lo, hi, dir, time, ch, chp, spread, live}
+const TV2SYM = {}; // TV2SYM['FX:EURUSD'] -> 'EURUSD' (translate TradingView names back to ours)
 MARKET.forEach(m => {
   m.point = Math.pow(10, -m.digits);   // smallest step, e.g. 0.00001
-  m.vol   = m.price * 0.00004;         // typical movement per tick (volatility)
+  m.tv = `${m.exchange}:${m.sym}`;     // TradingView live-feed name, e.g. "FX:EURUSD", "OANDA:XAUUSD"
+  // Yahoo Finance history name(s), tried in order by the Charts page.
+  // Spot gold (XAUUSD=X) often returns no data on Yahoo, so gold falls back to COMEX futures (GC=F).
+  m.yahoo = m.sym === 'XAUUSD' ? ['XAUUSD=X', 'GC=F'] : [`${m.sym}=X`];
   MAP[m.sym] = m;
+  TV2SYM[m.tv] = m.sym;
+  // Seed from m.price so every page can paint immediately. These values are
+  // replaced by the first real TradingView tick (section 2d) - live stays
+  // false until then, so nothing can trade on the seed prices.
   Q[m.sym] = {
     bid: m.price,
     ask: +(m.price + m.spread * m.point).toFixed(m.digits),
-    open: m.price * (1 + (Math.random() - 0.5) * 0.008),  // pretend "today's open"
-    lo: m.price * 0.9955, hi: m.price * 1.0045,           // pretend day low / high
-    dir: 1, time: new Date()
+    open: m.price,              // day reference price (open / prev close) - set from TradingView on first tick
+    lo: m.price, hi: m.price,   // day low / high - reset on first tick, then tracked / taken from TradingView
+    ch: null, chp: null,        // TradingView day change / change % (null until the feed sends them)
+    spread: m.spread,           // live spread in points - recomputed from ask-bid on every tick
+    dir: 1, time: new Date(), live: false
   };
 });
 
@@ -224,28 +246,161 @@ const log = msg => State.journal.unshift({ t: new Date(), msg });
 // ---- 2c) The FEED: pages subscribe to be told when prices change ----
 const Feed = {
   subs: new Set(),
+  status: 'connecting',   // TradingView socket state: 'connecting' | 'live' | 'closed'
   on(fn)  { this.subs.add(fn); return () => this.subs.delete(fn); }, // returns an "unsubscribe" function
   emit()  { this.subs.forEach(fn => fn()); }
 };
 
-// REAL FEED: replace the body of tick() with your WebSocket data.
-// For each message, set Q[sym].bid / .ask / .time, update .lo/.hi, then call Feed.emit().
-function tick() {
-  const now = new Date();
-  MARKET.forEach(m => {
-    if (Math.random() > 0.65) return;                         // not every symbol moves every second
-    const q = Q[m.sym];
-    const mid = +(q.bid + (Math.random() - 0.5) * 2 * m.vol).toFixed(m.digits);
-    if (mid !== q.bid) q.dir = mid > q.bid ? 1 : -1;          // remember direction for colours
-    q.bid = mid;
-    q.ask = +(mid + m.spread * m.point).toFixed(m.digits);
-    q.lo = Math.min(q.lo, q.bid); q.hi = Math.max(q.hi, q.ask);
-    q.time = now;
-  });
-  Feed.emit();        // tell every subscribed page / sheet to repaint
-  Session.save();     // NEW: keep the saved copy fresh so the next page continues from the same prices
+/* ---------------------------------------------------------------------
+   2d) LIVE FEED: TradingView WebSocket (adapted from feedPrice.js)
+   ---------------------------------------------------------------------
+   wss://data.tradingview.com/socket.io/websocket speaks a simple framed
+   protocol: every message is "~m~<length>~m~<JSON>". We open one
+   anonymous quote session, ask for lp / bid / ask / ch / chp for every
+   symbol in MARKET, and copy each "qsd" update into Q - the same Q the
+   Quotes watchlist, Charts, Trade and the order ticket already read.
+   Subscribers are then woken with Feed.emit() (batched, see below).
+   If the socket drops it reconnects with back-off (1s, 2s, ... 30s).
+
+   These are indicative quotes from TradingView's public feed, not an
+   executable broker feed.
+   --------------------------------------------------------------------- */
+const TV = {
+  URL: 'wss://data.tradingview.com/socket.io/websocket',
+  // lp=last price, bid/ask, ch=day change, chp=day change % (as in feedPrice.js).
+  // lp_time + day open/high/low are used when TradingView sends them; anything
+  // it does not send for a symbol is derived / tracked in tvApplyQuote() instead.
+  FIELDS: ['lp', 'bid', 'ask', 'ch', 'chp', 'lp_time', 'open_price', 'high_price', 'low_price', 'prev_close_price'],
+  ws: null, session: null, latest: {}, buffer: '', retryMs: 1000
+};
+// "finite number or null" (note: Number(null) is 0, so null/undefined are rejected first)
+const num = v => { if (v === null || v === undefined) return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
+
+// "qs_" + 12 random letters/digits (a TradingView quote session id)
+function tvSession(prefix) {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let out = prefix;
+  for (let i = 0; i < 12; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
 }
-setInterval(tick, 1000);   // one tick per second, on every page
+const tvFrame = payload => `~m~${payload.length}~m~${payload}`;
+function tvSend(method, params) {
+  if (TV.ws && TV.ws.readyState === WebSocket.OPEN) TV.ws.send(tvFrame(JSON.stringify({ m: method, p: params })));
+}
+// Pull every complete "~m~<len>~m~..." frame out of the receive buffer
+// (a frame can be split across WebSocket messages, so leftovers are kept).
+function tvTakeFrames() {
+  const out = [];
+  for (;;) {
+    if (!TV.buffer.startsWith('~m~')) {                                      // not at a frame start: resync to the next one
+      const at = TV.buffer.indexOf('~m~', 1);
+      if (at === -1) { TV.buffer = TV.buffer.endsWith('~m') ? '~m' : TV.buffer.endsWith('~') ? '~' : ''; break; } // keep only a possible partial header
+      TV.buffer = TV.buffer.slice(at);
+    }
+    const head = TV.buffer.match(/^~m~(\d+)~m~/);
+    if (!head) break;                                                        // partial header: wait for more data
+    const start = head[0].length, end = start + Number(head[1]);
+    if (end > TV.buffer.length) break;                                       // incomplete frame: wait for the rest
+    out.push(TV.buffer.slice(start, end));
+    TV.buffer = TV.buffer.slice(end);
+  }
+  return out;
+}
+
+// TradingView can send many messages a second. Q is updated at once, but
+// pages are repainted at most every 200ms so nothing flickers or janks,
+// and the session copy is saved at most once a second (pagehide also saves).
+let tvEmitTimer = null, tvSavedAt = 0;
+function tvScheduleEmit() {
+  if (tvEmitTimer !== null) return;
+  tvEmitTimer = setTimeout(() => {
+    tvEmitTimer = null;
+    Feed.emit();                                   // repaint the watchlist / chart / trade page
+    const now = Date.now();
+    if (now - tvSavedAt >= 1000) { tvSavedAt = now; Session.save(); }
+  }, 200);
+}
+
+// Copy one merged TradingView quote (v = its values object) into Q[sym].
+function tvApplyQuote(sym, v) {
+  const m = MAP[sym], q = Q[sym], r = x => +x.toFixed(m.digits);
+  let lp = num(v.lp), bid = num(v.bid), ask = num(v.ask);
+  if (lp !== null && lp <= 0) lp = null;                                       // a price of 0 / negative is "no price"
+  if (bid !== null && bid <= 0) bid = null;
+  if (ask !== null && ask <= 0) ask = null;
+  if (bid === null && ask === null && lp === null) return;                     // nothing usable yet
+  if (bid === null) bid = lp !== null ? lp : ask;                              // some symbols send "lp" only
+  if (ask === null) ask = (lp !== null ? lp : bid) + m.spread * m.point;       // fall back to the configured spread
+  bid = r(bid); ask = r(Math.max(ask, bid));
+  const first = !q.live;                                                       // first REAL tick (replacing the seed)?
+  if (!first && bid !== q.bid) q.dir = bid > q.bid ? 1 : -1;                   // direction, for price colours
+  q.bid = bid; q.ask = ask;
+  q.spread = Math.round((ask - bid) / m.point);                                // live spread, in points
+  // Day reference: TradingView's open_price if sent, else open = last - change.
+  const open = num(v.open_price), ch = num(v.ch), chp = num(v.chp);
+  if (open !== null) q.open = r(open);
+  else if (ch !== null && lp !== null) q.open = r(lp - ch);
+  else if (first) q.open = bid;
+  if (ch !== null) q.ch = ch;
+  if (chp !== null) q.chp = chp;
+  // Day range: TradingView's high/low when sent, otherwise tracked from live prices.
+  const hi = num(v.high_price), lo = num(v.low_price);
+  q.hi = hi !== null ? r(Math.max(hi, ask)) : (first ? ask : Math.max(q.hi, ask));
+  q.lo = lo !== null ? r(Math.min(lo, bid)) : (first ? bid : Math.min(q.lo, bid));
+  const t = num(v.lp_time);                                                    // exchange tick time, when sent
+  q.time = t !== null && t > 0 ? new Date(t * 1000) : new Date();
+  q.live = true;
+  tvScheduleEmit();
+}
+
+function tvHandleQuote(params) {
+  if (!Array.isArray(params) || !params[1]) return;
+  const quote = params[1], sym = TV2SYM[quote.n];
+  if (!sym || quote.s !== 'ok') return;                                        // unknown symbol / error status
+  TV.latest[quote.n] = { ...(TV.latest[quote.n] || {}), ...(quote.v || {}) };  // merge partial updates
+  tvApplyQuote(sym, TV.latest[quote.n]);
+}
+function tvHandleMessage(raw) {
+  TV.buffer += String(raw);
+  for (const payload of tvTakeFrames()) {
+    if (payload.startsWith('~h~')) {                                           // heartbeat: echo it back
+      if (TV.ws && TV.ws.readyState === WebSocket.OPEN) TV.ws.send(tvFrame(payload));
+      continue;
+    }
+    let data;
+    try { data = JSON.parse(payload); } catch { continue; }
+    if (data && data.m === 'qsd') tvHandleQuote(data.p);
+  }
+}
+function tvReconnect() {
+  Feed.status = 'closed';
+  setTimeout(tvConnect, TV.retryMs);
+  TV.retryMs = Math.min(TV.retryMs * 2, 30000);                                 // back off: 1s, 2s, 4s ... 30s max
+}
+function tvConnect() {
+  if (TV.ws && (TV.ws.readyState === WebSocket.OPEN || TV.ws.readyState === WebSocket.CONNECTING)) return;
+  Feed.status = 'connecting';
+  TV.session = tvSession('qs_');
+  let ws;
+  try { ws = TV.ws = new WebSocket(TV.URL); } catch { tvReconnect(); return; }
+  ws.addEventListener('open', () => {
+    TV.retryMs = 1000; Feed.status = 'live';
+    tvSend('set_auth_token', ['unauthorized_user_token']);                     // anonymous (public) access
+    tvSend('quote_create_session', [TV.session]);
+    tvSend('quote_set_fields', [TV.session, ...TV.FIELDS]);
+    tvSend('quote_add_symbols', [TV.session, ...MARKET.map(m => m.tv)]);       // subscribe to the whole watchlist universe
+    if (!State.journal.length || State.journal[0].msg !== 'Connected to TradingView live feed')
+      log('Connected to TradingView live feed');
+  });
+  ws.addEventListener('message', e => tvHandleMessage(e.data));
+  ws.addEventListener('error', () => { try { ws.close(); } catch { /* already closed */ } });
+  ws.addEventListener('close', () => {
+    if (TV.ws !== ws) return;                                                  // an older socket: ignore it
+    TV.ws = null; TV.buffer = '';
+    tvReconnect();
+  });
+}
+tvConnect();   // start the live feed on every page (each page is a separate html file)
 
 
 /* ---------------------------------------------------------------------

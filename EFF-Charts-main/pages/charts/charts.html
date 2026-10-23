@@ -8,7 +8,10 @@
 
   WHAT THIS PAGE DOES
     A live candlestick chart drawn with the Lightweight Charts library (loaded in
-    the <head> below). Header buttons pick the timeframe and open the order ticket.
+    the <head> below). Candle history comes from Yahoo Finance (fetched in
+    charts.js); the still-forming candle updates live from TradingView prices
+    kept in Q by shared/core.js. Both feeds need an internet connection.
+    Header buttons pick the timeframe and open the order ticket.
     Needs a logged-in account. The chart is drawn by JavaScript (charts.js).
 
   FILE ORDER  (the browser loads things top to bottom)
