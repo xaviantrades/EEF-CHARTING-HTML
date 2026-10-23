@@ -1,0 +1,8 @@
+/* =====================================================================
+   JOURNAL PAGE STYLES  (pages/journal/journal.css)
+   Loaded AFTER shared/base.css. Only the Journal page uses these.
+   ===================================================================== */
+
+/* One log line: a small grey timestamp above the message */
+.log { padding: 8px 18px; font-size: 14px; border-bottom: 1px solid var(--line); }
+.log small { color: var(--muted); display: block; font-family: var(--cond); }

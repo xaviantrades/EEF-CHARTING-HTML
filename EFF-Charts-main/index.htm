@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!--
+=====================================================================
+  KILELE TRADER  -  START FILE   (index.htm)
+=====================================================================
+  The original app was ONE html file. It is now split into one html
+  page per screen (see the "pages" folder). This file is only the
+  front door: it sends the browser to the first screen, Quotes.
+
+  Two redirects are used so it works everywhere:
+    1) <meta http-equiv="refresh">  works even if JavaScript is off
+    2) location.replace(...)        instant, and keeps the Back button clean
+  If neither runs, the link in the body lets you click through.
+=====================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kilele Trader</title>
+  <meta http-equiv="refresh" content="0; url=pages/quotes/quotes.html">
+  <script>location.replace('pages/quotes/quotes.html');</script>
+</head>
+<body>
+  <p><a href="pages/quotes/quotes.html">Open Kilele Trader</a></p>
+</body>
+</html>

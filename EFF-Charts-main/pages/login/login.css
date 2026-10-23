@@ -1,0 +1,32 @@
+/* =====================================================================
+   LOGIN PAGE STYLES  (pages/login/login.css)
+   Loaded AFTER shared/base.css. Only the Login page uses these.
+   ===================================================================== */
+
+/* The two big "Open a demo / real account" rows */
+.opt { display: flex; align-items: center; gap: 16px; padding: 18px; border: 0; width: 100%;
+       background: none; color: var(--text); text-align: left; border-bottom: 1px solid var(--line); }
+.opt.off { opacity: .4; pointer-events: none; }   /* greyed out + cannot be tapped */
+.opt-ic { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(#2f9bff,#2f6cff); color: #fff; display: grid; place-items: center; flex: none; }
+.opt-ic.real { background: #2a4a7a; }              /* the "real account" icon is a darker blue */
+.opt-text { flex: 1; }                              /* text takes all the space between icon and chevron */
+.opt h4 { font-weight: 500; font-size: 20px; font-family: var(--cond); }
+.opt p { color: var(--muted); font-size: 15px; }
+
+/* The heading "Login to an existing account" */
+.login-heading { text-align: center; font-weight: 700; padding: 16px; border-bottom: 1px solid var(--line); font-family: var(--cond); font-size: 19px; }
+
+/* Form rows: label on the left, input on the right */
+.field { display: flex; align-items: center; justify-content: space-between; margin: 0 18px;
+         padding: 18px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 17px; }
+.field input, .field select { background: none; border: 0; outline: 0; color: var(--text); text-align: right; flex: 1; min-width: 0; font-size: 17px; }
+.field select option { color: #000; }               /* dropdown list items stay readable in dark theme */
+.field input[type=checkbox] { flex: none; width: 24px; height: 24px; accent-color: var(--accent); }
+
+/* Space around the big Login button */
+.login-submit { padding: 0 18px 30px; }
+
+/* ---- "Open a demo account" dialog (built by demoDialog() in login.js) ----
+   Prefixed with ".modal" so they win over the shared ".modal p" rule. */
+.modal .center { text-align: center; }
+.modal .demo-note { margin-top: 14px; font-size: 14px; }

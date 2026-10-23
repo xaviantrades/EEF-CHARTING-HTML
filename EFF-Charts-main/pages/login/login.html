@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!--
+=====================================================================
+  KILELE TRADER  -  Login PAGE   (pages/login/login.html)
+=====================================================================
+  This is the HTML file of the "Login" page. It has its own css
+  (login.css) and its own javascript (login.js), all in this folder.
+
+  WHAT THIS PAGE DOES
+    Open a demo account or log in to an existing one. All of this is static HTML
+    (the form), the behaviour is in login.js: demoDialog / openDemo / doLogin.
+    The "real account" option is shown greyed out on purpose (class "off").
+
+  FILE ORDER  (the browser loads things top to bottom)
+    <head>  theme-boot.js   -> sets light/dark BEFORE the first paint (no flash)
+            base.css        -> shared colours, shell, buttons, sheets
+            login.css -> only this page
+    <body>  the app shell   -> header / main / nav / drawer / overlay / toast
+            core.js         -> shared data, icons, price feed, session saving
+            shell.js        -> shared actions, header, nav, navigation
+            login.js -> only this page: its description, actions and start
+
+  The scripts are normal (non-module) scripts on purpose, so this page
+  also works when opened by double-clicking the file (file://).
+=====================================================================
+-->
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <!-- viewport-fit=cover lets the app use the full screen on notched phones -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- colours the phone's browser bar. core.js updates it when the theme changes -->
+  <meta name="theme-color" content="#000000">
+  <title>Login - Kilele Trader</title> <!-- EDIT: brand name -->
+
+  <!-- Apply the saved theme immediately (runs before the page is painted) -->
+  <script src="../../shared/theme-boot.js"></script>
+
+  <!-- Fonts: Roboto (body) + Roboto Condensed (titles and numbers). Needs internet. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- 1) Shared styles (theme colours, app shell, buttons, drawer, sheets) -->
+  <link rel="stylesheet" href="../../shared/base.css">
+  <!-- 2) Styles used ONLY by this page -->
+  <link rel="stylesheet" href="login.css">
+</head>
+
+<body>
+  <!-- #app is the phone-shaped column. The same 6 empty boxes exist in every page;
+       shell.js / core.js fill them in. -->
+  <div id="app">
+    <header id="hdr"></header>   <!-- top bar: filled by renderHeader() using this page's header() -->
+    <main id="main">
+      <!-- Option 1: open a demo account (shows a confirmation dialog, see demoDialog in login.js) -->
+      <button class="opt" data-action="demoDialog">
+        <div class="opt-ic"><i data-icon="grad" data-size="28"></i></div>
+        <div class="opt-text"><h4>Open a demo account</h4><p>To learn trading and to test your strategies</p></div>
+        <span class="muted"><i data-icon="chevron"></i></span>
+      </button>
+
+      <!-- Option 2: real account. class "off" = greyed out and not clickable (not available in the demo) -->
+      <button class="opt off">
+        <div class="opt-ic real"><i data-icon="trade" data-size="28"></i></div>
+        <div class="opt-text"><h4>Open a real account</h4><p>For live trading, additional identification is required</p></div>
+        <span class="muted"><i data-icon="chevron"></i></span>
+      </button>
+
+      <p class="login-heading">Login to an existing account</p>
+
+      <!-- The login form. Each <label class="field"> is one row: label text on the left, input on the right.
+           The ids (l-type, l-login, l-pass, l-server) are read by doLogin() in login.js -->
+      <label class="field">Type <select id="l-type"><option>Trade account</option><option>Investor (read only)</option></select></label>
+      <label class="field">Login <input id="l-login" inputmode="numeric" autocomplete="username" placeholder=""></label>
+      <label class="field">Password <input id="l-pass" type="password" autocomplete="current-password"></label>
+      <label class="field">Server <select id="l-server"><option>Kilele-Demo</option><option>Kilele-Live</option></select></label>
+      <label class="field">Save password <input type="checkbox" checked></label>
+
+      <!-- data-action="toast" + data-msg="..." shows the message in the toast pill -->
+      <button class="link" data-action="toast" data-msg="Password reset: coming soon">Forgot password?</button>
+      <div class="login-submit"><button class="btn block" data-action="doLogin">Login</button></div>
+    </main>
+    <nav id="nav"></nav>         <!-- bottom tabs: filled by renderNav() -->
+    <div id="drawer"></div>      <!-- side menu: filled by Drawer.open() -->
+    <div id="overlay"></div>     <!-- bottom sheets + dialogs: filled by UI.sheet() / UI.modal() -->
+    <div id="toast" role="status"></div> <!-- small message pill: UI.toast() -->
+  </div>
+
+  <!-- Scripts: ORDER MATTERS. Each one uses things defined by the one before it. -->
+  <script src="../../shared/core.js"></script>
+  <script src="../../shared/shell.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>

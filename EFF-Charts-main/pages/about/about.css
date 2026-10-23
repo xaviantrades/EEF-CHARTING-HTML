@@ -1,0 +1,13 @@
+/* =====================================================================
+   ABOUT PAGE STYLES  (pages/about/about.css)
+   Loaded AFTER shared/base.css. These replace the inline style="..."
+   attributes the original code had on this page. The shared ".empty"
+   and ".logo" classes (base.css) are reused and adjusted here.
+   ===================================================================== */
+
+.about { min-height: auto; padding-top: 50px; }          /* a normal "empty" box but not stretched to 60% height */
+.about-logo { width: 84px; height: 84px; }               /* bigger version of the round logo */
+.about h2 { font-family: var(--cond); color: var(--text); }
+.about-risk { font-size: 14px; max-width: 320px; }       /* risk warning: small and not too wide */
+.about-credit { font-size: 14px; }
+.about a { color: var(--accent); }                       /* the TradingView link */

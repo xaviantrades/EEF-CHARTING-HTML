@@ -1,0 +1,16 @@
+/* =====================================================================
+   MESSAGES PAGE STYLES  (pages/messages/messages.css)
+   Loaded AFTER shared/base.css. These replace the inline style="..."
+   attributes the original code had on this page.
+   ===================================================================== */
+
+/* Full-height column: empty state grows, buttons stay at the bottom */
+.msg-page { display: flex; flex-direction: column; height: 100%; }
+.msg-empty { flex: 1; }
+.msg-icon { color: #3c4046; }          /* the big dark-grey chat bubble */
+.msg-text { font-size: 16px; }         /* "No messages" */
+
+/* Row with the Register and Sign in buttons */
+.msg-actions { display: flex; gap: 10px; padding: 12px 14px; }
+.msg-register { flex: 1; }             /* Register takes the remaining space */
+.msg-signin { flex: 0 0 36%; }         /* Sign in is fixed at 36% width */

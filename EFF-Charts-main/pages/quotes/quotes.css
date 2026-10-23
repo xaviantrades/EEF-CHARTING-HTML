@@ -1,0 +1,28 @@
+/* =====================================================================
+   QUOTES PAGE STYLES  (pages/quotes/quotes.css)
+   Loaded AFTER shared/base.css, so these rules can use the shared
+   colour variables (--text, --muted, --up, --dn ...) and fonts (--cond).
+   Only the Quotes page uses these classes.
+   ===================================================================== */
+
+/* One row of the watch-list = one symbol. Left side: change/name/time. Right side: prices. */
+.q-row { display: flex; justify-content: space-between; padding: 12px 18px; }
+.q-row:active { background: var(--pill); }          /* grey flash while the finger is down */
+
+/* ---- left side ---- */
+.q-chg { font-size: 14px; }                          /* "+12  +0.01%" change since open */
+.q-sym { font-family: var(--cond); font-weight: 700; font-size: 20px; margin: 1px 0; }  /* "EURUSD" */
+.q-meta { display: flex; align-items: center; gap: 6px; color: var(--muted); font-family: var(--cond); font-size: 15px; } /* time + spread line */
+.q-spr { display: flex; align-items: center; gap: 4px; }   /* the little spread icon + number (moved here from an inline style) */
+
+/* ---- right side ---- */
+.q-right { text-align: right; }
+.q-prices { display: flex; gap: 14px; justify-content: flex-end; font-family: var(--cond); line-height: 1.1; } /* bid and ask side by side */
+.px { font-weight: 400; }
+.px.up { color: var(--up); } .px.dn { color: var(--dn); }   /* price colour follows the last move */
+.px .pre { font-size: 25px; } .px .big { font-size: 33px; }  /* the pro-terminal price: small + BIG + tiny raised digit */
+.px sup { font-size: 15px; vertical-align: top; position: relative; top: 2px; }
+.q-lh { color: var(--muted); font-family: var(--cond); font-size: 15px; display: flex; gap: 14px; justify-content: flex-end; } /* "L: ... H: ..." line */
+
+/* Message in the "Add symbol" sheet when every symbol is already in the list */
+.all-added { text-align: center; padding: 16px; }

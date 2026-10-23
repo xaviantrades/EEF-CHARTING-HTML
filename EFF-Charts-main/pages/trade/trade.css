@@ -1,0 +1,16 @@
+/* =====================================================================
+   TRADE PAGE STYLES  (pages/trade/trade.css)
+   Loaded AFTER shared/base.css. The balance/equity summary rows use the
+   shared ".dr" and ".summary" classes (in base.css, because History uses them too).
+   Only the open-positions list needs its own rules.
+   ===================================================================== */
+
+/* One open position: symbol/side/volume + prices on the left, live profit on the right */
+.pos { display: flex; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+.pos:active { background: var(--pill); }
+.pos b { font-family: var(--cond); font-size: 19px; }
+.pos .pos-r { font-family: var(--cond); font-weight: 700; font-size: 20px; align-self: center; }  /* the profit number */
+.pos .sub { font-family: var(--cond); font-size: 15px; color: var(--muted); }                     /* "1.11990 → 1.12001" */
+
+/* Message shown when there are no open positions (moved here from an inline style) */
+.no-pos { text-align: center; padding: 40px 20px; }

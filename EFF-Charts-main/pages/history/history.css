@@ -1,0 +1,18 @@
+/* =====================================================================
+   HISTORY PAGE STYLES  (pages/history/history.css)
+   Loaded AFTER shared/base.css. The profit summary rows use the shared
+   ".dr" and ".summary" classes from base.css.
+   ===================================================================== */
+
+/* The three tabs: POSITIONS | ORDERS | DEALS */
+.tabs { display: flex; border-bottom: 1px solid var(--line); }
+.tab { flex: 1; text-align: center; padding: 14px 0; border: 0; background: none; color: var(--muted);
+       font-size: 15px; letter-spacing: .5px; text-transform: uppercase; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.tab.on { color: var(--text); border-bottom-color: var(--accent); }   /* the active tab: white text + blue underline */
+
+/* One history line (closed position, order or deal) */
+.deal { display: flex; justify-content: space-between; padding: 10px 18px; border-bottom: 1px solid var(--line); }
+.deal b { font-family: var(--cond); font-size: 19px; }
+.deal .r { text-align: right; font-family: var(--cond); color: var(--muted); font-size: 15px; }  /* right column: date + amount */
+.deal .r div:last-child { font-weight: 700; font-size: 16px; }                                   /* the amount line is bold */
+.deal-sub { font-family: var(--cond); }   /* small grey price line under the title (moved here from an inline style) */

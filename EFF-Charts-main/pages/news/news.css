@@ -1,0 +1,8 @@
+/* =====================================================================
+   NEWS PAGE STYLES  (pages/news/news.css)
+   Loaded AFTER shared/base.css. Only the News page uses these.
+   ===================================================================== */
+
+/* One headline: the title, then a small grey "source - time" line */
+.news { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.news small { color: var(--muted); }

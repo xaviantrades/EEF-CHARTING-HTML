@@ -1,0 +1,205 @@
+/* =====================================================================
+   KILELE TRADER  -  SHARED STYLESHEET  (shared/base.css)
+   =====================================================================
+   Loaded by EVERY page, BEFORE the page's own css file.
+
+   What lives here:   (things used by more than one page)
+     1) Theme colours (dark / light CSS variables)
+     2) Base reset + the app shell (header / main / bottom nav)
+     3) Shared components (buttons, empty state, dotted rows, links)
+     4) The side drawer (menu)
+     5) Bottom sheets, dialogs, the order ticket and the toast
+
+   What does NOT live here:
+     Anything used by only ONE page. Those rules are in that page's css:
+       pages/quotes/quotes.css, pages/charts/charts.css, ...
+   ===================================================================== */
+
+
+/* ===============================================================
+   1) THEME COLOURS
+   Every colour in the app is a CSS variable. The <html> tag has
+   data-theme="dark" or "light" and the matching block below applies.
+   Changing the theme = changing that one attribute (see applyTheme()
+   in shared/core.js, and shared/theme-boot.js which sets it early).
+   =============================================================== */
+
+/* Fonts used everywhere: --font for normal text, --cond for titles and numbers */
+:root { --font: 'Roboto', system-ui, sans-serif; --cond: 'Roboto Condensed', 'Roboto', sans-serif; }
+
+:root[data-theme="dark"] {
+  --outer:#0a0a0a;   /* page background around the phone column on desktop */
+  --bg:#000;         /* app background */
+  --surface:#2b2c2f; /* dialogs and bottom sheets */
+  --text:#fff;       /* main text */
+  --muted:#8f959c;   /* secondary text */
+  --line:#2c2d30;    /* thin dividers */
+  --accent:#3385ff;  /* blue buttons and active tab */
+  --up:#4d8ff5;      /* price going up / buy (blue) */
+  --dn:#ef5350;      /* price going down / sell (red) */
+  --cup:#26a69a;     /* chart candle: up */
+  --cdn:#ef5350;     /* chart candle: down */
+  --grid:rgba(255,255,255,.09);
+  --pill:#2b2e34;    /* small grey pills */
+  --btn2:#272b32;    /* secondary button */
+  --dots:#55585d;    /* dotted leader lines */
+}
+:root[data-theme="light"] {
+  --outer:#e9ecef; --bg:#fff; --surface:#f2f4f7; --text:#14171a; --muted:#6a7077;
+  --line:#e2e5e9; --accent:#1f6df2; --up:#1f6df2; --dn:#d8372f;
+  --cup:#1c9a8c; --cdn:#d8372f; --grid:rgba(0,0,0,.09);
+  --pill:#e8ecf1; --btn2:#e8ecf1; --dots:#b4b9bf;
+}
+
+
+/* ===============================================================
+   2) BASE + APP SHELL
+   The app is a column: header on top, scrolling main, nav at bottom.
+   On desktop it becomes a centred phone-width column.
+   =============================================================== */
+
+/* Reset: predictable box sizes, no default spacing, no grey tap flash on phones */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: var(--font); background: var(--outer); color: var(--text); }
+button { font-family: inherit; cursor: pointer; }
+input, select { font-family: inherit; font-size: 16px; } /* 16px stops iOS zooming on focus */
+
+/* Tiny colour helper classes used all over the app */
+.up { color: var(--up); } .dn { color: var(--dn); } .muted { color: var(--muted); }
+
+/* #app = the phone-shaped column that holds header, main, nav, drawer, overlay, toast */
+#app {
+  display: flex; flex-direction: column;
+  height: 100dvh; max-width: 480px; margin: 0 auto;
+  background: var(--bg); position: relative; overflow: hidden;
+}
+
+/* ---- Header (top bar). Its content is built by renderHeader() in shell.js ---- */
+#hdr { flex: none; height: 60px; display: flex; align-items: center; padding: 0 6px; gap: 2px; }
+.hbtn { width: 44px; height: 44px; border: 0; background: none; color: var(--text);
+        display: grid; place-items: center; border-radius: 50%; }
+.hbtn.txt { width: auto; padding: 0 12px; font-family: var(--cond); font-size: 20px; border-radius: 10px; }
+.title { flex: 1; font-family: var(--cond); font-size: 24px; padding-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.title.two small { display: block; font-size: 16px; line-height: 1.1; }   /* title with a sub-title (History) */
+.title.two span { color: var(--muted); }
+.actions { display: flex; }                                              /* the icon buttons on the right */
+
+/* ---- Main scrolling area: each page's content goes in here ---- */
+#main { flex: 1; overflow-y: auto; position: relative; }
+
+/* ---- Bottom navigation. Built by renderNav() in shell.js ---- */
+#nav { flex: none; display: flex; height: calc(72px + env(safe-area-inset-bottom));
+       padding-bottom: env(safe-area-inset-bottom); background: var(--bg); }
+.nav-item { flex: 1; border: 0; background: none; color: var(--text);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 4px; font-size: 14px; font-weight: 500; }
+.nav-item.active { color: var(--accent); }
+.pill { background: var(--pill); color: var(--text); padding: 2px 12px; border-radius: 12px; font-size: 14px; }
+.nav-item.active .pill { color: var(--accent); }
+
+
+/* ===============================================================
+   3) SHARED COMPONENTS
+   =============================================================== */
+
+/* Buttons: .btn = main blue pill; modifiers change its look */
+.btn { border: 0; border-radius: 999px; background: var(--accent); color: #fff;
+       font-weight: 700; font-size: 15px; padding: 14px 24px; letter-spacing: .3px; text-transform: uppercase; }
+.btn.sec { background: var(--btn2); color: var(--accent); }   /* secondary (grey) button */
+.btn.block { width: 100%; }                                   /* full-width button */
+.btn.plain { text-transform: none; font-weight: 500; }        /* normal-case text */
+
+/* Empty state: big centred message (e.g. "No trading accounts to show") */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center;
+         gap: 14px; padding: 40px 24px; min-height: 60%; text-align: center; color: var(--muted); }
+.circle-plus { width: 78px; height: 78px; border: 2px solid var(--accent); border-radius: 50%;
+               display: grid; place-items: center; color: var(--accent); }
+.empty p { color: var(--text); }
+
+/* Dotted-leader rows: "Balance: ........ 100 000.00" (used by Trade + History) */
+.dr { display: flex; align-items: baseline; padding: 4px 16px; font-size: 16px; }
+.dr b { font-weight: 700; }
+.dr i { flex: 1; border-bottom: 3px dotted var(--dots); margin: 0 8px; transform: translateY(-3px); }
+.dr span { font-family: var(--cond); font-weight: 700; font-size: 17px; }
+.summary { padding: 10px 0; border-bottom: 1px solid var(--line); }
+
+/* Plain blue text link-button (also used by "Manage accounts" in the drawer) */
+.link { color: var(--accent); text-align: center; padding: 20px; display: block; border: 0; background: none; width: 100%; font-size: 16px; }
+
+/* The round mountain logo (drawer + About page) */
+.logo { width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg,#0b403b,#062e2b); display: grid; place-items: center; color: #f5a524; flex: none; }
+
+
+/* ===============================================================
+   4) DRAWER (side menu)
+   Slides in from the left. It is always in the page; the "open" class
+   is what makes it visible (added by Drawer.open() in core.js).
+   =============================================================== */
+#drawer { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+#drawer .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.55); opacity: 0; transition: opacity .25s; }
+#drawer .panel { position: absolute; left: 0; top: 0; bottom: 0; width: 84%; max-width: 340px; overflow-y: auto;
+                 background: var(--bg); border-right: 1px solid var(--line); transform: translateX(-100%); transition: transform .25s; }
+#drawer.open { pointer-events: auto; }
+#drawer.open .scrim { opacity: 1; }
+#drawer.open .panel { transform: none; }
+.d-head { position: relative; overflow: hidden; padding: 24px 20px 18px; border-bottom: 1px solid var(--line); }
+.d-user { display: flex; gap: 16px; align-items: center; }
+.d-name { font-size: 20px; }                                   /* account name in the drawer header */
+.d-user small { color: var(--muted); display: block; margin-top: 2px; }
+.link.d-manage { text-align: left; padding: 14px 0 0; }        /* "Manage accounts" link, left aligned */
+.ribbon { position: absolute; top: 16px; right: -38px; width: 130px; transform: rotate(45deg); background: #3bb91c; color: #fff; text-align: center; font-size: 13px; padding: 4px 0; }
+.d-item { display: flex; align-items: center; gap: 24px; width: 100%; border: 0; background: none; color: var(--text);
+          padding: 16px 20px; font-size: 17px; font-weight: 500; text-align: left; }
+.d-item .badge { margin-left: auto; background: #ef4444; color: #fff; border-radius: 12px; font-size: 12px; padding: 3px 8px; }
+
+
+/* ===============================================================
+   5) SHEETS, DIALOGS, ORDER TICKET, TOAST
+   #overlay is an empty box in every page. UI.sheet() / UI.modal()
+   (core.js) fill it with a bottom sheet or a centred dialog.
+   =============================================================== */
+#overlay { position: absolute; inset: 0; z-index: 40; display: none; }
+#overlay.open { display: block; }
+#overlay .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface); border-radius: 18px 18px 0 0;
+         padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); animation: up .2s ease-out; max-height: 85%; overflow-y: auto; }
+.modal { position: absolute; left: 14px; right: 14px; top: 50%; transform: translateY(-50%); background: var(--surface);
+         border-radius: 16px; border: 1px solid var(--line); padding: 22px 20px; max-height: 90%; overflow-y: auto; }
+.modal h3, .sheet h3 { text-align: center; font-size: 22px; font-weight: 700; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); font-family: var(--cond); }
+.modal p { font-size: 15px; line-height: 1.4; margin-bottom: 12px; }
+.modal .fine-print { font-size: 14px; }                          /* small grey legal text in dialogs */
+.modal .btns { display: flex; gap: 12px; margin: 16px 0; }
+.modal .btns .btn { flex: 1; text-transform: none; font-weight: 500; }
+.modal .btn.out { background: none; border: 1px solid var(--accent); color: var(--accent); }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* A tappable row inside a sheet (e.g. "New order", "Chart", "Remove") */
+.item { display: flex; align-items: center; justify-content: space-between; width: 100%; border: 0; background: none;
+        color: var(--text); padding: 15px 4px; font-size: 17px; border-bottom: 1px solid var(--line); text-align: left; }
+.item:last-child { border-bottom: 0; }
+
+/* Order ticket (the "New order" bottom sheet, built by orderHTML() in shell.js) */
+.o-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+.o-row select, .o-row input { background: var(--pill); color: var(--text); border: 0; border-radius: 10px; padding: 12px; font-size: 18px; text-align: center; }
+.stepper { display: flex; gap: 8px; align-items: center; }
+.stepper input { width: 110px; }
+.stepper button { width: 44px; height: 44px; border-radius: 10px; border: 0; background: var(--pill); color: var(--text); font-size: 22px; }
+.trade-btns { display: flex; gap: 12px; margin-top: 14px; }
+.tb { flex: 1; border: 0; border-radius: 12px; padding: 12px 6px; color: #fff; font-family: var(--cond); }
+.tb small { display: block; font-size: 14px; letter-spacing: 1px; opacity: .9; }
+.tb span { font-size: 26px; font-weight: 700; }
+.tb.sell { background: var(--dn); } .tb.buy { background: #2f6cff; }
+
+/* Toast: the small message pill that fades in/out near the bottom */
+#toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 60; background: #333; color: #fff;
+         padding: 10px 18px; border-radius: 20px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 86%; text-align: center; }
+#toast.show { opacity: 1; }
+
+
+/* ===============================================================
+   6) ACCESSIBILITY
+   =============================================================== */
+/* respect people who turn animations off */
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+/* visible keyboard focus ring */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
