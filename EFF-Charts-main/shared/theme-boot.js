@@ -21,11 +21,20 @@
   try {
     // Settings are saved by core.js under the key "kt_settings" (kt_ = Kilele Trader prefix)
     var saved = JSON.parse(localStorage.getItem('kt_settings')) || {};
-    var mode  = saved.theme || 'dark';                                   // 'dark' | 'light' | 'system'
-    var dark  = mode === 'system'
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches        // follow the device
-      : mode === 'dark';
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    var mode = saved.theme || 'dark'; // 'dark' | 'light' | 'system'
+    var dark = function () {
+      if (mode === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches // follow the device
+;
+      }
+      return mode === 'dark';
+    }.call(this);
+    document.documentElement.setAttribute('data-theme', function () {
+      if (dark) {
+        return 'dark';
+      }
+      return 'light';
+    }.call(this));
   } catch (e) {
     /* storage blocked or bad JSON: do nothing, the HTML default (dark) stays */
   }

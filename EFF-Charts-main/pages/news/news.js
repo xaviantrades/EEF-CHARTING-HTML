@@ -10,8 +10,14 @@
    fetches the headlines and fills <main id="main">.
    ===================================================================== */
 const PAGE = {
-  id: 'news', parent: 'quotes', nav: false,
-  header: () => ({ left: 'back', title: 'News' })
+  id: 'news',
+  parent: 'quotes',
+  nav: false,
+  header: function () {
+    return {
+      left: 'back',
+      title: 'News'
+    };
+  }
 };
-
 App.start(PAGE);

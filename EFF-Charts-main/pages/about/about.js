@@ -8,9 +8,14 @@
    ===================================================================== */
 const PAGE = {
   id: 'about',
-  parent: 'settings',   // the back arrow returns to Settings
+  parent: 'settings',
+  // the back arrow returns to Settings
   nav: false,
-  header: () => ({ left: 'back', title: 'About' })
+  header: function () {
+    return {
+      left: 'back',
+      title: 'About'
+    };
+  }
 };
-
 App.start(PAGE);

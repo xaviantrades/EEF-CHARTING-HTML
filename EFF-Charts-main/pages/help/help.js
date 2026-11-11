@@ -10,8 +10,14 @@
    (see pages/trade/trade.js for a page with live data).
    ===================================================================== */
 const PAGE = {
-  id: 'help', parent: 'quotes', nav: false,
-  header: () => ({ left: 'back', title: 'User guide' })
+  id: 'help',
+  parent: 'quotes',
+  nav: false,
+  header: function () {
+    return {
+      left: 'back',
+      title: 'User guide'
+    };
+  }
 };
-
 App.start(PAGE);

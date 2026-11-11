@@ -12,12 +12,25 @@
    are needed here.
    ===================================================================== */
 const PAGE = {
-  id: 'messages',     // lets the bottom nav highlight the Messages tab
-  parent: 'quotes',   // where a back-arrow would go (this page shows a menu button instead)
-  nav: true,          // show the bottom navigation
+  id: 'messages',
+  // lets the bottom nav highlight the Messages tab
+  parent: 'quotes',
+  // where a back-arrow would go (this page shows a menu button instead)
+  nav: true,
+  // show the bottom navigation
   // Menu button on the left, title, and one search icon on the right (just a "coming soon" toast)
-  header: () => ({ left: 'menu', title: 'Messages', actions: [{ icon: 'info', action: 'toast', msg: 'Search: coming soon', label: 'Search' }] })
+  header: function () {
+    return {
+      left: 'menu',
+      title: 'Messages',
+      actions: [{
+        icon: 'info',
+        action: 'toast',
+        msg: 'Search: coming soon',
+        label: 'Search'
+      }]
+    };
+  }
   // no render(): the content already exists in messages.html
 };
-
-App.start(PAGE);   // draw the header + nav and run the first-run checks
+App.start(PAGE); // draw the header + nav and run the first-run checks

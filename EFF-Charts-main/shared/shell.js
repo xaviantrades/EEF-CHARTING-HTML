@@ -32,9 +32,7 @@
              The hashchange router is gone; renderRoute() is kept because pages
              still need a way to REDRAW THEMSELVES after data changes.
    ===================================================================== */
-
-let current = null;   // the PAGE object of the page being shown right now (set by App.start)
-
+let current = null; // the PAGE object of the page being shown right now (set by App.start)
 
 /* =====================================================================
    1) ACTIONS  (what happens when you tap something)
@@ -46,52 +44,118 @@ let current = null;   // the PAGE object of the page being shown right now (set 
    ===================================================================== */
 const Actions = {
   // ---- navigation ----
-  go(el)         { Drawer.close(); go(el.dataset.to); },                       // <button data-action="go" data-to="settings">
-  back()         { go(current.parent || 'quotes'); },                           // the arrow in the header: go to this page's "parent"
-  openDrawer()   { Drawer.open(); },
-  closeDrawer()  { Drawer.close(); },
-  closeOverlay() { UI.close(); },                                               // closes any sheet / dialog
-  toast(el)      { UI.toast(el.dataset.msg); },                                 // show data-msg in the toast
-
-  // ---- used by Quotes, Charts and Trade ----
-  chartFor(el)   { UI.close(); State.chart.sym = el.dataset.sym; go('charts'); },
-
-  // ---- the order ticket (opened from Quotes, Charts and Trade) ----
-  newOrder() { openOrder(); },
-  vol(el) {                                                                      // the − / + buttons next to the volume box
-    const input = $('#o-vol'), v = Math.max(0.01, Math.min(100, (parseFloat(input.value) || 0.01) + parseFloat(el.dataset.d)));
-    UI.order.vol = v; input.value = v.toFixed(2);
+  go: function (el) {
+    Drawer.close();
+    go(el.dataset.to);
   },
-  placeOrder(el) {                                                               // the SELL / BUY buttons
-    const a = State.account, o = UI.order, m = MAP[o.sym], q = Q[o.sym];
-    if (!q.live) return UI.toast('Waiting for live prices…');                    // never fill at a pre-feed seed price
+  // <button data-action="go" data-to="settings">
+  back: function () {
+    go(current.parent || 'quotes');
+  },
+  // the arrow in the header: go to this page's "parent"
+  openDrawer: function () {
+    Drawer.open();
+  },
+  closeDrawer: function () {
+    Drawer.close();
+  },
+  closeOverlay: function () {
+    UI.close();
+  },
+  // closes any sheet / dialog
+  toast: function (el) {
+    UI.toast(el.dataset.msg);
+  },
+  // show data-msg in the toast
+  // ---- used by Quotes, Charts and Trade ----
+  chartFor: function (el) {
+    UI.close();
+    State.chart.sym = el.dataset.sym;
+    go('charts');
+  },
+  // ---- the order ticket (opened from Quotes, Charts and Trade) ----
+  newOrder: function () {
+    openOrder();
+  },
+  vol: function (el) {
+    // the − / + buttons next to the volume box
+    const input = $('#o-vol'),
+      v = Math.max(0.01, Math.min(100, (parseFloat(input.value) || 0.01) + parseFloat(el.dataset.d)));
+    UI.order.vol = v;
+    input.value = v.toFixed(2);
+  },
+  placeOrder: function (el) {
+    // the SELL / BUY buttons
+    const a = State.account,
+      o = UI.order,
+      m = MAP[o.sym],
+      q = Q[o.sym];
+    if (!q.live) return UI.toast('Waiting for live prices…'); // never fill at a pre-feed seed price
     const vol = Math.max(0.01, parseFloat($('#o-vol').value) || 0.01);
     // a "position" = one open trade. buys fill at the ask price, sells at the bid price.
-    const p = { id: State.nextId++, sym: o.sym, side: el.dataset.side, vol, price: el.dataset.side === 'buy' ? q.ask : q.bid, time: new Date() };
+    const p = {
+      id: State.nextId++,
+      sym: o.sym,
+      side: el.dataset.side,
+      vol: vol,
+      price: function () {
+        if (el.dataset.side === 'buy') {
+          return q.ask;
+        }
+        return q.bid;
+      }.call(this),
+      time: new Date()
+    };
     if (marginOf(p) > totals().free) return UI.toast('Not enough free margin');
-    a.positions.push(p); a.orders.push(p);
-    a.deals.push({ type: 'trade', sym: p.sym, side: p.side, dir: 'in', vol, price: p.price, time: p.time, profit: 0 });
+    a.positions.push(p);
+    a.orders.push(p);
+    a.deals.push({
+      type: 'trade',
+      sym: p.sym,
+      side: p.side,
+      dir: 'in',
+      vol: vol,
+      price: p.price,
+      time: p.time,
+      profit: 0
+    });
     log(`'${a.login}': market ${p.side} ${vol.toFixed(2)} ${p.sym} at ${p.price.toFixed(m.digits)}`);
-    UI.close(); UI.toast(`Order #${p.id} executed`);
-    renderRoute();                                                               // redraw the current page so it shows the new data
+    UI.close();
+    UI.toast(`Order #${p.id} executed`);
+    renderRoute(); // redraw the current page so it shows the new data
   },
-
   // ---- first-run consent dialog ----
-  accept()  { Store.set('consent', true); State.consent = true; Session.save(); UI.close(); },
-  decline() { UI.toast('You need to accept to use the app'); }
+  accept: function () {
+    Store.set('consent', true);
+    State.consent = true;
+    Session.save();
+    UI.close();
+  },
+  decline: function () {
+    UI.toast('You need to accept to use the app');
+  }
 };
-
 
 /* =====================================================================
    2) ORDER TICKET (bottom sheet)
    ===================================================================== */
 // Builds the HTML of the ticket for the symbol stored in UI.order
 function orderHTML() {
-  const o = UI.order, m = MAP[o.sym], q = Q[o.sym];
+  var _this = this;
+  const o = UI.order,
+    m = MAP[o.sym],
+    q = Q[o.sym];
   return `
     <h3>New order</h3>
     <div class="o-row"><span class="muted">Symbol</span>
-      <select id="o-sym" data-change="orderSymbol">${MARKET.map(x => `<option ${x.sym === o.sym ? 'selected' : ''}>${x.sym}</option>`).join('')}</select></div>
+      <select id="o-sym" data-change="orderSymbol">${MARKET.map(function (x) {
+    return `<option ${function () {
+      if (x.sym === o.sym) {
+        return 'selected';
+      }
+      return '';
+    }.call(_this)}>${x.sym}</option>`;
+  }).join('')}</select></div>
     <div class="o-row"><span class="muted">Volume (lots)</span>
       <div class="stepper"><button data-action="vol" data-d="-0.01">−</button><input id="o-vol" inputmode="decimal" value="${o.vol.toFixed(2)}"><button data-action="vol" data-d="0.01">+</button></div></div>
     <div class="trade-btns">
@@ -101,37 +165,46 @@ function orderHTML() {
 }
 // Opens the ticket. Needs a logged-in account, otherwise sends the user to the login page.
 function openOrder(sym) {
-  if (!State.account) { UI.toast('Add a trading account first'); return go('login'); }
-  UI.order = { sym: sym || State.chart.sym, vol: 0.10 };
+  if (!State.account) {
+    UI.toast('Add a trading account first');
+    return go('login');
+  }
+  UI.order = {
+    sym: sym || State.chart.sym,
+    vol: 0.10
+  };
   UI.sheet(orderHTML());
-  UI.live = () => {                     // keep the buy/sell prices live while the sheet is open
-    const m = MAP[UI.order.sym], q = Q[UI.order.sym];
-    const b = $('#o-bid'), a = $('#o-ask');
+  UI.live = function () {
+    // keep the buy/sell prices live while the sheet is open
+    const m = MAP[UI.order.sym],
+      q = Q[UI.order.sym];
+    const b = $('#o-bid'),
+      a = $('#o-ask');
     if (b) b.textContent = q.bid.toFixed(m.digits);
     if (a) a.textContent = q.ask.toFixed(m.digits);
   };
 }
-Feed.on(() => UI.live && UI.live());    // run the sheet's live function on every tick
-
+Feed.on(function () {
+  return UI.live && UI.live();
+}); // run the sheet's live function on every tick
 
 /* =====================================================================
    3) CLICK LISTENERS
    ===================================================================== */
 // ONE click listener for the whole page (event delegation).
 // closest() walks up from the tapped element to find the nearest data-action.
-document.addEventListener('click', e => {
+document.addEventListener('click', function (e) {
   const el = e.target.closest('[data-action]');
   if (el && Actions[el.dataset.action]) Actions[el.dataset.action](el, e);
 });
 // Inputs that use data-change (e.g. the symbol dropdown in the order sheet)
-document.addEventListener('change', e => {
+document.addEventListener('change', function (e) {
   if (e.target.dataset.change === 'orderSymbol') {
     UI.order.vol = parseFloat($('#o-vol').value) || UI.order.vol;
     UI.order.sym = e.target.value;
-    $('#overlay .sheet').innerHTML = orderHTML();      // redraw the ticket for the new symbol
+    $('#overlay .sheet').innerHTML = orderHTML(); // redraw the ticket for the new symbol
   }
 });
-
 
 /* =====================================================================
    4) HEADER + NAV
@@ -141,29 +214,82 @@ document.addEventListener('change', e => {
 
 // Top bar: built from the page's header() description
 function renderHeader(page) {
+  var _this2 = this;
   const h = page.header();
   $('#hdr').innerHTML = `
-    <button class="hbtn" data-action="${h.left === 'back' ? 'back' : 'openDrawer'}" aria-label="${h.left === 'back' ? 'Back' : 'Menu'}">${icon(h.left === 'back' ? 'back' : 'menu')}</button>
-    <div class="title ${h.sub ? 'two' : ''}">${h.sub ? `<small>${h.title}</small><span>${h.sub}</span>` : h.title}</div>
-    <div class="actions">${(h.actions || []).map(a => a.text
-      ? `<button class="hbtn txt" data-action="${a.action}">${a.text}</button>`
-      : `<button class="hbtn" data-action="${a.action}" ${a.msg ? `data-msg="${a.msg}"` : ''} aria-label="${a.label || ''}">${icon(a.icon)}</button>`).join('')}</div>`;
+    <button class="hbtn" data-action="${function () {
+    if (h.left === 'back') {
+      return 'back';
+    }
+    return 'openDrawer';
+  }.call(this)}" aria-label="${function () {
+    if (h.left === 'back') {
+      return 'Back';
+    }
+    return 'Menu';
+  }.call(this)}">${icon(function () {
+    if (h.left === 'back') {
+      return 'back';
+    }
+    return 'menu';
+  }.call(this))}</button>
+    <div class="title ${function () {
+    if (h.sub) {
+      return 'two';
+    }
+    return '';
+  }.call(this)}">${function () {
+    if (h.sub) {
+      return `<small>${h.title}</small><span>${h.sub}</span>`;
+    }
+    return h.title;
+  }.call(this)}</div>
+    <div class="actions">${(h.actions || []).map(function (a) {
+    return function () {
+      if (a.text) {
+        return `<button class="hbtn txt" data-action="${a.action}">${a.text}</button>`;
+      }
+      return `<button class="hbtn" data-action="${a.action}" ${function () {
+        if (a.msg) {
+          return `data-msg="${a.msg}"`;
+        }
+        return '';
+      }.call(this)} aria-label="${a.label || ''}">${icon(a.icon)}</button>`;
+    }.call(_this2);
+  }).join('')}</div>`;
 }
 
 // Bottom navigation (hidden on sub-pages like Settings)
 function renderNav() {
+  var _this3 = this;
   const nav = $('#nav');
-  nav.style.display = current.nav ? 'flex' : 'none';
+  nav.style.display = function () {
+    if (current.nav) {
+      return 'flex';
+    }
+    return 'none';
+  }.call(this);
   const a = State.account;
   nav.innerHTML = [
-    // [page id, label, icon]   (the Trade tab shows the balance as a small pill once logged in)
-    ['quotes', 'Quotes', 'quotes'], ['charts', 'Charts', 'charts'],
-    ['trade', a ? `<span class="pill">${compact(a.balance)}</span>` : 'Trade', 'trade'],
-    ['history', 'History', 'history'], ['messages', 'Messages', 'messages']
-  ].map(([id, label, ic]) => `
-    <button class="nav-item ${current.id === id ? 'active' : ''}" data-action="go" data-to="${id}">${icon(ic, 26, 1.8)}<span>${label}</span></button>`).join('');
+  // [page id, label, icon]   (the Trade tab shows the balance as a small pill once logged in)
+  ['quotes', 'Quotes', 'quotes'], ['charts', 'Charts', 'charts'], ['trade', function () {
+    if (a) {
+      return `<span class="pill">${compact(a.balance)}</span>`;
+    }
+    return 'Trade';
+  }.call(this), 'trade'], ['history', 'History', 'history'], ['messages', 'Messages', 'messages']].map(function (item) {
+    const id = item[0];
+    const label = item[1];
+    const ic = item[2];
+    return `
+    <button class="nav-item ${function () {
+      if (current.id === id) {
+        return 'active';
+      }
+      return '';
+    }.call(_this3)}" data-action="go" data-to="${id}">${icon(ic, 26, 1.8)}<span>${label}</span></button>`;
+  }).join('');
 }
-
 
 /* =====================================================================
    5) NAVIGATION
@@ -171,16 +297,18 @@ function renderNav() {
 
 // Where a page lives. All pages are siblings: pages/<id>/<id>.html
 // so from any page the address of another one is ../<id>/<id>.html
-const pageUrl = id => `../${id}/${id}.html`;
+const pageUrl = function (id) {
+  return `../${id}/${id}.html`;
+};
 
 // Draw (or REDRAW) the current page. Called at startup and whenever a page's data changes.
 function renderRoute() {
-  if (current.unmount) current.unmount();                              // let the page clean up (timers, subscriptions)
-  renderHeader(current);                                               // top bar
+  if (current.unmount) current.unmount(); // let the page clean up (timers, subscriptions)
+  renderHeader(current); // top bar
   const main = $('#main');
-  if (current.render) main.innerHTML = current.render();               // 1) draw the HTML (pages with a static html body have no render())
-  if (current.mount) current.mount(main);                              // 2) then start timers / subscriptions
-  renderNav();                                                         // bottom bar (balance pill may have changed)
+  if (current.render) main.innerHTML = current.render(); // 1) draw the HTML (pages with a static html body have no render())
+  if (current.mount) current.mount(main); // 2) then start timers / subscriptions
+  renderNav(); // bottom bar (balance pill may have changed)
 }
 
 // go('settings') -> opens pages/settings/settings.html
@@ -191,25 +319,28 @@ function go(id) {
   // (e.g. "Connected to Kilele-Demo" is shown at the same moment we leave the login page).
   // We also pass how many milliseconds it still has left, so it disappears at the same moment as before.
   const left = UI.TOAST_MS - (Date.now() - UI._at);
-  if (UI._msg && left > 0) State.pendingToast = { msg: UI._msg, left };
-  Session.save();                                                      // save the data for the next page
-  location.href = pageUrl(id);                                         // the browser loads the other html file
+  if (UI._msg && left > 0) State.pendingToast = {
+    msg: UI._msg,
+    left: left
+  };
+  Session.save(); // save the data for the next page
+  location.href = pageUrl(id); // the browser loads the other html file
 }
 
 // The one function every page calls last. Starts the page.
 const App = {
-  start(page) {
+  start: function (page) {
     current = page;
-    hydrateIcons();                       // turn <i data-icon="..."> tags in the html into real SVGs
-    renderRoute();                        // draw header, content and nav
-    maybeWelcome();                       // first-run consent dialog (only if not accepted yet)
-    if (State.pendingToast) {             // a toast sent to us by the previous page?
-      UI.toast(State.pendingToast.msg, State.pendingToast.left);   // show it for the time it had left
+    hydrateIcons(); // turn <i data-icon="..."> tags in the html into real SVGs
+    renderRoute(); // draw header, content and nav
+    maybeWelcome(); // first-run consent dialog (only if not accepted yet)
+    if (State.pendingToast) {
+      // a toast sent to us by the previous page?
+      UI.toast(State.pendingToast.msg, State.pendingToast.left); // show it for the time it had left
       State.pendingToast = null;
     }
   }
 };
-
 
 /* =====================================================================
    6) FIRST RUN CONSENT DIALOG
