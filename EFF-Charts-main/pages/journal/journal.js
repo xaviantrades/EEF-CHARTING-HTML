@@ -14,11 +14,20 @@
    ===================================================================== */
 const PAGE = {
   id: 'journal',
-  parent: 'settings',   // the back arrow returns to Settings (this page is opened from there)
+  parent: 'settings',
+  // the back arrow returns to Settings (this page is opened from there)
   nav: false,
-  header: () => ({ left: 'back', title: 'Journal' }),
+  header: function () {
+    return {
+      left: 'back',
+      title: 'Journal'
+    };
+  },
   // one block per log line: small grey timestamp, then the message
-  render: () => State.journal.map(j => `<div class="log"><small>${stamp(j.t)}</small>${j.msg}</div>`).join('')
+  render: function () {
+    return State.journal.map(function (j) {
+      return `<div class="log"><small>${stamp(j.t)}</small>${j.msg}</div>`;
+    }).join('');
+  }
 };
-
 App.start(PAGE);

@@ -10,8 +10,14 @@
    (see pages/trade/trade.js for a page with live data).
    ===================================================================== */
 const PAGE = {
-  id: 'calendar', parent: 'quotes', nav: false,
-  header: () => ({ left: 'back', title: 'Economic calendar' })
+  id: 'calendar',
+  parent: 'quotes',
+  nav: false,
+  header: function () {
+    return {
+      left: 'back',
+      title: 'Economic calendar'
+    };
+  }
 };
-
 App.start(PAGE);

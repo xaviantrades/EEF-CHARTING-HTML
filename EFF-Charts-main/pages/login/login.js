@@ -19,9 +19,16 @@
    1) THE PAGE DESCRIPTION
    --------------------------------------------------------------------- */
 const PAGE = {
-  id: 'login', parent: 'quotes',
-  nav: false,                                                   // no bottom nav on this page
-  header: () => ({ left: 'back', title: 'Kilele Capital' })     // EDIT: firm name. 'back' = arrow that goes to the parent page
+  id: 'login',
+  parent: 'quotes',
+  nav: false,
+  // no bottom nav on this page
+  header: function () {
+    return {
+      left: 'back',
+      title: 'Kilele Capital'
+    };
+  } // EDIT: firm name. 'back' = arrow that goes to the parent page
   // no render(): the content already exists in login.html
 };
 
@@ -30,11 +37,28 @@ const PAGE = {
    --------------------------------------------------------------------- */
 // Builds a fresh simulated account, records it in the journal, shows a toast and opens Quotes.
 // go('quotes') saves State to the session first, so the Quotes page starts already logged in.
-function createAccount({ name, login, server, demo }) {
-  State.account = { name, login, server, demo, balance: 100000, positions: [], closed: [], orders: [],
-    deals: [{ type: 'balance', time: new Date(), amount: 100000 }] };   // first deal = the starting deposit
+function createAccount(accountData) {
+  const name = accountData.name;
+  const login = accountData.login;
+  const server = accountData.server;
+  const demo = accountData.demo;
+  State.account = {
+    name: name,
+    login: login,
+    server: server,
+    demo: demo,
+    balance: 100000,
+    positions: [],
+    closed: [],
+    orders: [],
+    deals: [{
+      type: 'balance',
+      time: new Date(),
+      amount: 100000
+    }]
+  }; // first deal = the starting deposit
   log(`'${login}': authorized on ${server}`);
-  UI.toast('Connected to ' + server);     // the toast is carried over to the Quotes page by go()
+  UI.toast('Connected to ' + server); // the toast is carried over to the Quotes page by go()
   go('quotes');
 }
 
@@ -43,7 +67,7 @@ function createAccount({ name, login, server, demo }) {
    --------------------------------------------------------------------- */
 Object.assign(Actions, {
   // "Open a demo account" row -> confirmation dialog
-  demoDialog() {
+  demoDialog: function () {
     UI.modal(`<h3>Open a demo account</h3>
       <p class="center">Kilele Capital<br><span class="up">www.example.com</span></p>
       <p class="muted center">By opening an account you agree to the account opening terms and the data protection policy.</p>
@@ -51,18 +75,27 @@ Object.assign(Actions, {
       <p class="muted demo-note">To trade using real money, you need to apply for a real trading account by entering into a separate agreement with a financial services company.</p>`);
   },
   // "Open an Account" button in that dialog: make a demo account with a random 11-digit login
-  openDemo() {
+  openDemo: function () {
     UI.close();
-    createAccount({ name: 'Demo Trader', login: String(10000000000 + Math.floor(Math.random() * 9e9)), server: 'Kilele-Demo', demo: true });
+    createAccount({
+      name: 'Demo Trader',
+      login: String(10000000000 + Math.floor(Math.random() * 9e9)),
+      server: 'Kilele-Demo',
+      demo: true
+    });
   },
   // "Login" button: read the form (ids are in login.html)
-  doLogin() {
+  doLogin: function () {
     const login = $('#l-login').value.trim();
     if (!login) return UI.toast('Enter your login number');
     const server = $('#l-server').value;
     // the display name is "Trader " + the last 4 digits; the account is "demo" if the server name says so
-    createAccount({ name: 'Trader ' + login.slice(-4), login, server, demo: /demo/i.test(server) });
+    createAccount({
+      name: 'Trader ' + login.slice(-4),
+      login: login,
+      server: server,
+      demo: /demo/i.test(server)
+    });
   }
 });
-
 App.start(PAGE);
